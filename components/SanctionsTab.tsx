@@ -9,6 +9,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
 import { showToast, TextInput, useState } from "@webpack/common";
 
+import { relaySanction } from "../relay";
 import { copySlash } from "../slash";
 import { SanctionRecord, SanctionStatus, setSanctionStatus, useData } from "../store";
 import { cl, formatDate, PASTE_KEY } from "../utils";
@@ -46,7 +47,11 @@ function SanctionRow({ s }: { s: SanctionRecord; }) {
                             <button
                                 key={status}
                                 className={cl("status", `status-${status}`, s.status === status && "status-selected")}
-                                onClick={() => setSanctionStatus(s.id, status)}
+                                onClick={() => {
+                                    if (s.status === status) return;
+                                    setSanctionStatus(s.id, status);
+                                    if (status !== "pending") relaySanction(s, status);
+                                }}
                             >
                                 {label}
                             </button>

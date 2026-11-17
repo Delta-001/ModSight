@@ -22,6 +22,7 @@ import { cacheWatchedMessage, captureEvidence, clearMessageCache, onMessageDelet
 import { openPanel } from "./components/Panel";
 import { openSanctionModal } from "./components/SanctionModal";
 import { openWatchModal } from "./components/WatchReasonModal";
+import { clearRelay, relayDeleted, relayMember, relayMessage, relayVoice, relayWatch } from "./relay";
 import { isModGuild, migrateCategories, settings } from "./settings";
 import { flushData, getData, isLoaded, loadData, MAX_VOICE_HISTORY, patchWatched, unwatch, useData, WatchEntry } from "./store";
 import { avatarUrl, channelName, cl, displayName, goToChannel } from "./utils";
@@ -41,6 +42,7 @@ const userMenu: NavContextMenuPatchCallback = (children, { user, guildId, channe
                 action={() => {
                     if (!watched) return openWatchModal(user.id);
                     unwatch(user.id);
+                    relayWatch(user.id, false);
                     showToast({ text: `${displayName(user.id)} n'est plus surveillé` });
                 }}
             />
@@ -156,6 +158,7 @@ function onVoiceState(vs: RawVoiceState) {
         return { voiceChannelId: next, voiceHistory: history.slice(-MAX_VOICE_HISTORY), lastActivity: now };
     });
 
+    relayVoice(vs.userId, prev, next);
     if (!settings.store.notifyVoice) return;
     const name = displayName(vs.userId);
     if (!prev && next) notify(vs.userId, `👁 ${name} a rejoint un vocal`, channelName(next), () => goToChannel(next));
@@ -254,6 +257,7 @@ export default definePlugin({
             cacheWatchedMessage(message, guildId!);
             const now = Date.now();
             patchWatched(entry.userId, () => ({ lastActivity: now }));
+            relayMessage(message, guildId!);
 
             if (!settings.store.notifyMessages || now - (lastMessageNotification.get(entry.userId) ?? 0) < 60_000) return;
             lastMessageNotification.set(entry.userId, now);
@@ -268,7 +272,9 @@ export default definePlugin({
         async MESSAGE_DELETE({ id, channelId, guildId }: { id: string; channelId: string; guildId?: string; }) {
             if (!isLoaded() || !isModGuild(guildId)) return;
             const evidence = await onMessageDeleted(id, channelId, guildId!);
-            if (!evidence || !settings.store.notifyDeleted) return;
+            if (!evidence) return;
+            relayDeleted(evidence.userId, channelId, evidence.messages[0]?.content ?? "");
+            if (!settings.store.notifyDeleted) return;
             notify(
                 evidence.userId,
                 `👁 Message supprimé : ${evidence.userName}`,
@@ -287,6 +293,7 @@ export default definePlugin({
                 const name = nick || user.global_name || user.username;
                 if (!name || entry.nick === name) return;
                 patchWatched(entry.userId, () => ({ nick: name, lastActivity: Date.now() }));
+                if (entry.nick) relayMember(entry.userId, "✏️ Pseudo modifié", `${entry.nick} → ${name}`);
                 if (entry.nick && settings.store.notifyMembers)
                     notify(entry.userId, "👁 Pseudo modifié", `${entry.nick} → ${name}`, () => openProfile(entry.userId));
             });
@@ -295,6 +302,7 @@ export default definePlugin({
         GUILD_MEMBER_ADD({ guildId, user }: { guildId: string; user: { id: string; }; }) {
             memberEvent(guildId, user, entry => {
                 patchWatched(entry.userId, () => ({ lastActivity: Date.now() }));
+                relayMember(entry.userId, "📥 Retour sur le serveur");
                 if (settings.store.notifyMembers)
                     notify(entry.userId, "👁 Retour sur le serveur", `${displayName(entry.userId)} a rejoint le serveur`, () => openProfile(entry.userId));
             });
@@ -303,6 +311,7 @@ export default definePlugin({
         GUILD_MEMBER_REMOVE({ guildId, user }: { guildId: string; user: { id: string; }; }) {
             memberEvent(guildId, user, entry => {
                 patchWatched(entry.userId, () => ({ lastActivity: Date.now() }));
+                relayMember(entry.userId, "📤 Départ du serveur");
                 if (settings.store.notifyMembers)
                     notify(entry.userId, "👁 Départ du serveur", `${entry.nick ?? displayName(entry.userId)} a quitté le serveur`, () => openProfile(entry.userId));
             });
@@ -322,6 +331,7 @@ export default definePlugin({
         flushData();
         revokeAttachmentUrls();
         clearMessageCache();
+        clearRelay();
         lastMessageNotification.clear();
     }
 });

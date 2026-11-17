@@ -11,6 +11,8 @@ import { readdir } from "fs/promises";
 import { join } from "path";
 import { promisify } from "util";
 
+import { WEBHOOK_PATTERN } from "./webhook";
+
 const ALLOWED_HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net"]);
 
 export type DownloadResult =
@@ -41,6 +43,32 @@ export async function downloadAttachment(_: IpcMainInvokeEvent, url: string, max
         if (bytes.byteLength > maxBytes) return { ok: false, error: "Fichier trop volumineux" };
 
         return { ok: true, mime: res.headers.get("content-type") ?? "application/octet-stream", bytes };
+    } catch (e: any) {
+        return { ok: false, error: String(e?.message ?? e) };
+    }
+}
+
+export type WebhookResult =
+    | { ok: true; }
+    | { ok: false; error: string; retryAfter?: number; };
+
+/** Poste sur un webhook Discord : c'est le webhook qui écrit, pas le compte de l'utilisateur (ni cookie ni jeton) */
+export async function postWebhook(_: IpcMainInvokeEvent, url: string, body: unknown): Promise<WebhookResult> {
+    if (!WEBHOOK_PATTERN.test(url)) return { ok: false, error: "URL de webhook invalide" };
+    try {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            credentials: "omit",
+            redirect: "error"
+        });
+        if (res.status === 429) {
+            const { retry_after } = await res.json().catch(() => ({}));
+            return { ok: false, error: "Trop de messages", retryAfter: Number(retry_after) || 2 };
+        }
+        if (!res.ok) return { ok: false, error: `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`.trim() };
+        return { ok: true };
     } catch (e: any) {
         return { ok: false, error: String(e?.message ?? e) };
     }

@@ -4,7 +4,7 @@ Outil de modération personnel pour **un seul serveur Discord** : préparation d
 
 ModSight ne fait **aucune action à ta place**. Il n'envoie aucun message, ne sanctionne personne et n'appelle pas l'API de Discord. Il lit ce que ton client reçoit déjà, l'affiche, le garde en local, le copie dans le presse-papier ou l'insère dans la barre de message. C'est toujours toi qui appuies sur Entrée.
 
-Toutes les données (surveillés, preuves, pièces jointes, historique) restent sur ton ordinateur, dans le stockage local de Vencord.
+Toutes les données (surveillés, preuves, pièces jointes, historique) restent sur ton ordinateur, dans le stockage local de Vencord. Seule exception : le [journal par webhook](#journal-vers-un-salon-webhook), désactivé par défaut.
 
 ## Installation
 
@@ -124,6 +124,25 @@ Utilisation : dans la fenêtre de sanction, **Insérer dans #salon** ouvre le sa
 La barre de message du salon doit être **vide**. Sinon, ModSight ne colle rien et te prévient. La commande est aussi copiée dans le presse-papier : si le collage automatique échoue, vide la barre et colle (Ctrl+V, ou Cmd+V sur Mac).
 
 Si la barre n'est pas vide, ou si Discord n'a pas les commandes en mémoire, le collage donne seulement le texte de la commande.
+
+## Journal vers un salon (webhook)
+
+ModSight peut recopier les évènements des membres surveillés dans un salon de ton choix, sur n'importe quel serveur, comme un journal de sécurité :
+- les messages des surveillés, avec le lien du message et les pièces jointes ;
+- leurs messages supprimés ;
+- le vocal : arrivée, changement de salon, départ ;
+- les changements de pseudo, arrivées et départs du serveur ;
+- les ajouts et retraits de la liste de surveillance ;
+- les sanctions validées ou refusées, avec le modérateur.
+
+Réglage :
+1. Dans le salon voulu : Modifier le salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL du webhook.
+2. Panneau → Réglages → Journal vers un salon : colle l'URL, puis « Envoyer un test ».
+3. Choisis les types d'évènements à envoyer.
+
+C'est le webhook qui écrit dans le salon, pas ton compte : ce n'est pas un selfbot. Les mentions contenues dans les messages recopiés ne notifient personne. Les envois sont regroupés (jusqu'à 10 évènements par message) et espacés pour respecter les limites de Discord. Si Discord est fermé ou rechargé, les évènements pas encore envoyés sont perdus.
+
+Garde l'URL du webhook secrète : toute personne qui l'a peut écrire dans le salon. Elle n'est pas incluse dans l'export JSON.
 
 ## Variables des modèles
 

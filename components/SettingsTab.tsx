@@ -16,6 +16,7 @@ import { describeImport, exportAll, importAll, parseExport } from "../capture";
 import { DEFAULT_REPORT, settings } from "../settings";
 import { channelName, cl } from "../utils";
 import { ActionsEditor, CategoryEditor, VariablesHelp } from "./CategoryEditor";
+import { RelaySection } from "./RelaySection";
 import { UpdateSection } from "./UpdateSection";
 
 function Section({ title, children }: { title: string; children: ReactNode; }) {
@@ -164,6 +165,10 @@ function SettingsTabInner() {
                         <Switch checked={s[key]} onChange={v => settings.store[key] = v} />
                     </div>
                 ))}
+            </Section>
+
+            <Section title="Journal vers un salon (webhook)">
+                <RelaySection />
             </Section>
 
             <Section title="Sauvegarde">

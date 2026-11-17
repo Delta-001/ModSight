@@ -8,8 +8,9 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, showToast, TextInput, useState, VoiceStateStore } from "@webpack/common";
 
+import { relayWatch } from "../relay";
 import { settings } from "../settings";
-import { setWatched } from "../store";
+import { getData, setWatched } from "../store";
 import { cl, displayName } from "../utils";
 
 function WatchReasonModal({ modalProps, userId }: { modalProps: RenderModalProps; userId: string; }) {
@@ -17,6 +18,7 @@ function WatchReasonModal({ modalProps, userId }: { modalProps: RenderModalProps
     const name = displayName(userId);
 
     function confirm() {
+        if (!getData().watched[userId]) relayWatch(userId, true, reason.trim());
         setWatched(userId, reason.trim(), name, VoiceStateStore.getVoiceState(settings.store.guildId, userId)?.channelId ?? null);
         showToast({ text: `${name} est maintenant surveillé` });
         modalProps.onClose();

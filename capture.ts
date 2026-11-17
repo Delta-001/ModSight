@@ -182,7 +182,7 @@ export async function deleteEvidence(id: string) {
 // Réglages repris par l'export : configuration complète, pour passer d'un ordinateur à l'autre
 const CONFIG_KEYS = [
     "guildId", "sanctionChannelId", "contextSize", "maxAttachmentMb",
-    "notifyMessages", "notifyVoice", "notifyMembers", "notifyDeleted",
+    "notifyMessages", "notifyVoice", "notifyMembers", "notifyDeleted", "relayEvents",
     "actions", "categories", "reportTemplate"
 ] as const;
 

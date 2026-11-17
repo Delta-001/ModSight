@@ -9,6 +9,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { openUserProfile } from "@utils/discord";
 import { showToast, useState, useStateFromStores, VoiceStateStore } from "@webpack/common";
 
+import { relayWatch } from "../relay";
 import { settings } from "../settings";
 import { unwatch, useData, WatchEntry } from "../store";
 import { avatarUrl, channelName, cl, displayName, formatDate, goToChannel, timeAgo } from "../utils";
@@ -56,7 +57,7 @@ function WatchedRow({ entry }: { entry: WatchEntry; }) {
                     <Button
                         size="small"
                         variant="secondary"
-                        onClick={() => { unwatch(entry.userId); showToast({ text: `${name} n'est plus surveillé` }); }}
+                        onClick={() => { unwatch(entry.userId); relayWatch(entry.userId, false); showToast({ text: `${name} n'est plus surveillé` }); }}
                     >
                         Retirer
                     </Button>

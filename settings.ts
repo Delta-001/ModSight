@@ -137,6 +137,14 @@ export const settings = definePluginSettings({
         type: OptionType.CUSTOM,
         default: DEFAULT_REPORT
     },
+    webhookUrl: {
+        type: OptionType.CUSTOM,
+        default: ""
+    },
+    relayEvents: {
+        type: OptionType.CUSTOM,
+        default: { messages: true, deleted: true, voice: true, members: true, watchlist: true, sanctions: true } as Record<string, boolean>
+    },
     update: {
         type: OptionType.COMPONENT,
         // Résolu au rendu : UpdateSection importe ce fichier
