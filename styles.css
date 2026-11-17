@@ -1,0 +1,637 @@
+/* ModSight : couleurs reprises des variables de Discord pour suivre le thème clair ou sombre */
+
+.vc-ms-panel,
+.vc-ms-sanction,
+.vc-ms-settings {
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-ms-panel {
+    min-height: 60vh;
+}
+
+.vc-ms-muted {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-ms-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-ms-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.vc-ms-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 6px;
+    color: var(--header-secondary, var(--text-muted));
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.vc-ms-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text-link);
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.vc-ms-link:hover {
+    text-decoration: underline;
+}
+
+.vc-ms-label .vc-ms-link {
+    font-weight: 500;
+    text-transform: none;
+}
+
+.vc-ms-toggle {
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+.vc-ms-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* Onglets */
+
+.vc-ms-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--background-modifier-accent);
+}
+
+.vc-ms-tab {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--interactive-normal);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-ms-tab:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-hover);
+}
+
+.vc-ms-tab-selected {
+    background: var(--background-modifier-selected);
+    color: var(--interactive-active);
+}
+
+/* Listes et cartes */
+
+.vc-ms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-ms-card {
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-accent);
+}
+
+.vc-ms-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vc-ms-row-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.vc-ms-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.vc-ms-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.vc-ms-actions-col {
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.vc-ms-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vc-ms-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.vc-ms-avatar-lg {
+    width: 64px;
+    height: 64px;
+}
+
+.vc-ms-avatar-sm {
+    width: 20px;
+    height: 20px;
+}
+
+.vc-ms-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Badges */
+
+.vc-ms-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.vc-ms-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--background-modifier-accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-ms-badge-danger {
+    background: var(--status-danger);
+    color: var(--white, #fff);
+}
+
+.vc-ms-badge-warning {
+    background: var(--status-warning);
+    color: var(--black, #000);
+}
+
+.vc-ms-badge-live {
+    background: var(--status-danger);
+    color: var(--white, #fff);
+    font-size: 10px;
+}
+
+.vc-ms-eye {
+    margin-left: 4px;
+    font-size: 12px;
+    cursor: default;
+}
+
+/* Fenêtre de sanction */
+
+.vc-ms-member-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vc-ms-member-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--header-primary, var(--text-default));
+}
+
+.vc-ms-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-ms-pill {
+    --vc-ms-pill: var(--brand-500);
+
+    padding: 4px 10px;
+    border: 2px solid var(--vc-ms-pill);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-ms-pill:hover {
+    background: var(--background-modifier-hover);
+}
+
+.vc-ms-pill-selected,
+.vc-ms-pill-selected:hover {
+    background: var(--vc-ms-pill);
+    color: var(--white, #fff);
+}
+
+.vc-ms-duration-input {
+    width: 120px;
+}
+
+.vc-ms-evidence-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.vc-ms-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.vc-ms-code textarea,
+.vc-ms-code input,
+textarea.vc-ms-code {
+    font-family: var(--font-code);
+    font-size: 13px;
+}
+
+.vc-ms-code-inline {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: var(--background-tertiary);
+    font-family: var(--font-code);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.vc-ms-details {
+    margin-top: 10px;
+}
+
+.vc-ms-details summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-ms-pre {
+    margin: 6px 0 0;
+    padding: 8px;
+    border-radius: 4px;
+    background: var(--background-tertiary);
+    font-family: var(--font-code);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Surveillés et vocal */
+
+.vc-ms-voice-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-ms-history {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 6px;
+    padding-left: 12px;
+}
+
+.vc-ms-history-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vc-ms-voice-channel {
+    width: 100%;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--header-primary, var(--text-default));
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+}
+
+.vc-ms-voice-channel:hover {
+    background: var(--background-modifier-hover);
+}
+
+.vc-ms-voice-members {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 18px;
+}
+
+.vc-ms-voice-member {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.vc-ms-voice-member-watched {
+    background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+}
+
+/* Preuves */
+
+.vc-ms-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.vc-ms-message {
+    padding: 4px 8px;
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+}
+
+.vc-ms-message-target {
+    border-left-color: var(--brand-500);
+    background: var(--background-modifier-hover);
+}
+
+.vc-ms-message-deleted {
+    border-left-color: var(--status-danger);
+}
+
+.vc-ms-message-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.vc-ms-attachment {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-link);
+}
+
+.vc-ms-attachment-img {
+    display: block;
+    max-width: 100%;
+    max-height: 260px;
+    margin-top: 4px;
+    border-radius: 4px;
+}
+
+/* Sanctions */
+
+.vc-ms-status-pills {
+    display: flex;
+    gap: 4px;
+}
+
+.vc-ms-status {
+    --vc-ms-status: var(--text-muted);
+
+    padding: 2px 8px;
+    border: 1px solid var(--vc-ms-status);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--vc-ms-status);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-ms-status-pending {
+    --vc-ms-status: var(--status-warning);
+}
+
+.vc-ms-status-approved {
+    --vc-ms-status: var(--status-positive);
+}
+
+.vc-ms-status-rejected {
+    --vc-ms-status: var(--status-danger);
+}
+
+.vc-ms-status-selected {
+    background: var(--vc-ms-status);
+    color: var(--white, #fff);
+}
+
+.vc-ms-select {
+    height: 40px;
+    padding: 0 8px;
+    border: 1px solid var(--background-modifier-accent);
+    border-radius: 8px;
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font: inherit;
+}
+
+/* Réglages */
+
+.vc-ms-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.vc-ms-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-ms-section-title {
+    margin: 0;
+    color: var(--header-primary, var(--text-default));
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-ms-field .vc-ms-label {
+    margin-top: 0;
+}
+
+.vc-ms-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.vc-ms-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vc-ms-category-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--header-primary, var(--text-default));
+    font-weight: 600;
+}
+
+.vc-ms-category-title .vc-ms-code-inline {
+    margin-top: 0;
+}
+
+.vc-ms-category-fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.vc-ms-category-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-ms-span-3 {
+    grid-column: 1 / -1;
+}
+
+.vc-ms-color {
+    width: 48px;
+    height: 40px;
+    padding: 2px;
+    border: 1px solid var(--background-modifier-accent);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.vc-ms-variables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 12px;
+    margin: 6px 0;
+    font-size: 12px;
+}
+
+/* Écran de configuration */
+
+.vc-ms-setup {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 4px;
+    line-height: 1.5;
+}
+
+.vc-ms-setup-title {
+    margin: 0;
+    color: var(--header-primary, var(--text-default));
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.vc-ms-setup ol {
+    margin: 0;
+    padding-left: 20px;
+    list-style: decimal;
+}
+
+.vc-ms-notice {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-left: 3px solid var(--status-warning);
+    background: var(--background-modifier-accent);
+    font-size: 13px;
+}
+
+.vc-ms-notice-danger {
+    border-left-color: var(--status-danger);
+}
+
+.vc-ms-category-fields .vc-ms-pill {
+    font-size: 12px;
+}
+
+.vc-ms-command-search {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-ms-command-results {
+    display: flex;
+    flex-direction: column;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-accent);
+    border-radius: 8px;
+}
+
+.vc-ms-command-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-ms-command-result:hover {
+    background: var(--background-modifier-hover);
+}

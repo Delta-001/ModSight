@@ -1,0 +1,4 @@
+node_modules
+# Propres à une installation hors du dossier Vencord (voir README)
+tsconfig.json
+.DS_Store
