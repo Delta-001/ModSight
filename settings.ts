@@ -16,34 +16,63 @@ export interface SlashConfig {
     options: Record<string, string>;
 }
 
+/** Action de sanction du bot (Warn, Mute, Ban…), avec sa commande texte ou slash */
+export interface SanctionAction {
+    id: string;
+    name: string;
+    emoji: string;
+    /** Commande texte (bot à préfixe), utilisée quand slash est absent */
+    command: string;
+    slash?: SlashConfig;
+}
+
+/** Palier d'un motif : la sanction prévue la Nᵉ fois */
+export interface Step {
+    /** ID de l'action, ou "" pour une consigne sans commande */
+    action: string;
+    duration?: string;
+    /** Consigne affichée au modérateur */
+    note?: string;
+}
+
+/** Motif de sanction, avec ses paliers successifs */
 export interface Category {
     id: string;
     name: string;
     emoji: string;
     color: string;
-    /** Commande texte (bot à préfixe), utilisée quand slash est absent */
-    command: string;
-    slash?: SlashConfig;
-    durations: string[];
     reason: string;
+    /** Consigne générale du motif */
+    hint?: string;
+    steps: Step[];
+    /** Au-delà des paliers : action à appliquer, et jours ajoutés à chaque récidive */
+    repeat?: { action: string; addDays?: number; };
 }
 
-const WARN = "+warn {id} {raison}";
-const MUTE = "+mute {id} {durée} {raison}";
-const BAN = "+ban {id} {raison}";
+export const DEFAULT_ACTIONS: SanctionAction[] = [
+    { id: "note", name: "Note", emoji: "📝", command: "+note {id} {raison}" },
+    { id: "warn", name: "Warn", emoji: "⚠️", command: "+warn {id} {raison}" },
+    { id: "mute", name: "Mute", emoji: "🔇", command: "+mute {id} {durée} {raison}" },
+    { id: "forclos", name: "Forclos", emoji: "⛔", command: "+forclos {id} {durée} {raison}" },
+    { id: "ban", name: "Ban", emoji: "🔨", command: "+ban {id} {raison}" }
+];
 
 export const DEFAULT_CATEGORIES: Category[] = [
-    { id: "warn", name: "Avertissement", emoji: "⚠️", color: "#f0b232", command: WARN, durations: [], reason: "Non-respect du règlement" },
-    { id: "spam", name: "Spam/Flood", emoji: "🔁", color: "#5865f2", command: MUTE, durations: ["10m", "30m", "1h", "6h"], reason: "Spam / flood" },
-    { id: "insultes", name: "Insultes", emoji: "🤬", color: "#e67e22", command: MUTE, durations: ["1h", "6h", "12h", "1d"], reason: "Insultes envers un membre" },
-    { id: "pub", name: "Pub", emoji: "📢", color: "#9b59b6", command: MUTE, durations: ["1h", "1d", "7d"], reason: "Publicité non autorisée" },
-    { id: "arnaque", name: "Arnaque", emoji: "💸", color: "#da373c", command: BAN, durations: [], reason: "Tentative d'arnaque" },
-    { id: "nsfw", name: "NSFW", emoji: "🔞", color: "#ed4245", command: BAN, durations: [], reason: "Contenu NSFW" },
-    { id: "pirate", name: "Compte piraté", emoji: "🏴‍☠️", color: "#747f8d", command: BAN, durations: [], reason: "Compte compromis (piraté)" }
+    {
+        id: "spam", name: "Spam", emoji: "🔁", color: "#5865f2", reason: "Spam",
+        steps: [{ action: "warn" }, { action: "mute", duration: "1h" }, { action: "mute", duration: "1j" }, { action: "mute", duration: "3j" }],
+        repeat: { action: "mute", addDays: 3 }
+    },
+    {
+        id: "insulte", name: "Insulte membre", emoji: "🤬", color: "#e67e22", reason: "Insulte envers un membre",
+        steps: [{ action: "mute", duration: "1h" }, { action: "mute", duration: "1j" }, { action: "mute", duration: "3j" }, { action: "mute", duration: "7j" }],
+        repeat: { action: "mute", addDays: 7 }
+    },
+    { id: "scam", name: "Scam de compte", emoji: "💸", color: "#da373c", reason: "Scam de compte", steps: [{ action: "ban" }] }
 ];
 
 export const DEFAULT_REPORT = [
-    "**Sanction : {catégorie}**",
+    "**Sanction : {catégorie}** ({niveau}ᵉ fois) → {action} {durée}",
     "Membre : {mention} ({pseudo} · {id})",
     "Commande : `{commande}`",
     "Raison : {raison}",
@@ -93,6 +122,10 @@ export const settings = definePluginSettings({
         description: "Notifier quand un message d'un membre surveillé est supprimé",
         default: true
     },
+    actions: {
+        type: OptionType.CUSTOM,
+        default: DEFAULT_ACTIONS as SanctionAction[]
+    },
     categories: {
         type: OptionType.CUSTOM,
         default: DEFAULT_CATEGORIES as Category[]
@@ -104,3 +137,18 @@ export const settings = definePluginSettings({
 });
 
 export const isModGuild = (guildId: string | null | undefined) => !!guildId && guildId === settings.store.guildId;
+
+/** Convertit les catégories d'avant les paliers (une commande par catégorie) en action + motif à un palier */
+export function migrateCategories() {
+    const old = settings.store.categories as any[];
+    if (!old.some(c => !Array.isArray(c.steps))) return;
+
+    const actions = [...settings.store.actions];
+    settings.store.categories = old.map(c => {
+        if (Array.isArray(c.steps)) return c;
+        const actionId = "ancien-" + c.id;
+        actions.push({ id: actionId, name: c.name, emoji: c.emoji, command: c.command ?? "", slash: c.slash });
+        return { id: c.id, name: c.name, emoji: c.emoji, color: c.color, reason: c.reason, steps: [{ action: actionId, duration: c.durations?.[0] }] };
+    });
+    settings.store.actions = actions;
+}

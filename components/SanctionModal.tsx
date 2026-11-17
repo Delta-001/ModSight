@@ -10,6 +10,7 @@ import { RenderModalProps } from "@vencord/discord-types";
 import { ChannelStore, GuildMemberStore, Modal, openModal, showToast, SnowflakeUtils, TextArea, TextInput, useMemo, useRef, useState } from "@webpack/common";
 import type { CSSProperties, ReactNode } from "react";
 
+import { levelFor, ordinal } from "../ladder";
 import { Category, settings } from "../settings";
 import { buildSlash, copySlash, pasteSlash } from "../slash";
 import { countApproved, newId, SanctionRecord, upsertSanction, useData } from "../store";
@@ -65,7 +66,7 @@ function Pill({ selected, color, onClick, children }: { selected: boolean; color
 
 function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOptions & { modalProps: RenderModalProps; }) {
     const { guildId, sanctionChannelId } = settings.store;
-    const { categories, reportTemplate } = settings.use(["categories", "reportTemplate"]);
+    const { categories, actions, reportTemplate } = settings.use(["categories", "actions", "reportTemplate"]);
 
     const recordId = useRef(newId());
     const createdAt = useRef(0);
@@ -74,19 +75,43 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
     const recidiveBefore = useData(d => d.sanctions.filter(s => s.userId === userId && s.status === "approved" && s.id !== recordId.current).length);
     const memberEvidence = useData(d => d.evidence.filter(e => e.userId === userId));
 
-    const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+    const [query, setQuery] = useState("");
+    const [categoryId, setCategoryId] = useState("");
     const category: Category | undefined = categories.find(c => c.id === categoryId);
-    const [duration, setDuration] = useState(category?.durations[0] ?? "");
-    const [reason, setReason] = useState(category?.reason ?? "");
+    const [chosenLevel, setChosenLevel] = useState<number | null>(null);
+    const [customDuration, setCustomDuration] = useState<string | null>(null);
+    const [reason, setReason] = useState("");
     const [checked, setChecked] = useState<string[]>(evidenceId ? [evidenceId] : []);
     const [manualCommand, setManualCommand] = useState<string | null>(null);
 
+    // Infractions déjà validées pour ce motif : elles déterminent le palier prévu
+    const priorForMotif = useData(d => d.sanctions.filter(s => s.userId === userId && s.categoryId === categoryId && s.status === "approved" && s.id !== recordId.current).length);
+    const plannedLevel = priorForMotif + 1;
+    const level = chosenLevel ?? plannedLevel;
+    const current = category && levelFor(category, level);
+    const action = current && actions.find(a => a.id === current.step.action);
+    const duration = customDuration ?? current?.step.duration ?? "";
+
     function selectCategory(c: Category) {
         setCategoryId(c.id);
-        setDuration(c.durations[0] ?? "");
+        setChosenLevel(null);
+        setCustomDuration(null);
         setReason(c.reason);
         setManualCommand(null);
     }
+
+    function selectLevel(n: number) {
+        setChosenLevel(n === plannedLevel ? null : n);
+        setCustomDuration(null);
+        setManualCommand(null);
+    }
+
+    const q = query.trim().toLowerCase();
+    const shownCategories = q ? categories.filter(c => c.name.toLowerCase().includes(q)) : categories;
+    // Paliers affichés : ceux du motif, le palier prévu s'il est au-delà, et la récidive
+    const levels = category
+        ? [...new Set([...category.steps.map((_, i) => i + 1), ...(category.repeat ? [category.steps.length + 1] : []), plannedLevel])].sort((a, b) => a - b)
+        : [];
 
     const origin = message ?? (() => {
         const e = memberEvidence.find(e => e.id === evidenceId);
@@ -111,12 +136,14 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
         message: originLink,
         salon: origin ? `<#${origin.channelId}>` : "",
         catégorie: category?.name ?? "",
+        action: action?.name ?? "",
+        niveau: category ? String(level) : "",
         commande: "",
         récidive: String(recidiveBefore),
         date: new Date().toLocaleDateString("fr-FR")
     };
-    const slash = category?.slash ? buildSlash(guildId, category.slash, vars) : null;
-    const generated = category && !category.slash ? fillTemplate(category.command, vars) : "";
+    const slash = action?.slash ? buildSlash(guildId, action.slash, vars) : null;
+    const generated = action && !action.slash ? fillTemplate(action.command, vars) : "";
     const command = slash ? (slash.ok ? slash.text : "") : manualCommand ?? generated;
     const report = fillTemplate(reportTemplate, { ...vars, commande: command });
 
@@ -131,6 +158,8 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
             categoryId: category.id,
             categoryName: category.name,
             color: category.color,
+            actionName: action?.name ?? "",
+            level,
             duration: vars.durée,
             reason: vars.raison,
             command,
@@ -197,34 +226,56 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
             <div className={cl("sanction")}>
                 <MemberHeader userId={userId} recidive={recidive} />
 
-                <div className={cl("label")}>Catégorie</div>
-                {categories.length === 0 && <div className={cl("muted")}>Aucune catégorie : ajoute-en dans l'onglet Réglages du panneau.</div>}
-                <div className={cl("pills")}>
-                    {categories.map(c => (
+                <div className={cl("label")}>Motif</div>
+                {categories.length === 0 && <div className={cl("muted")}>Aucun motif : ajoute-en dans l'onglet Réglages du panneau.</div>}
+                <TextInput autoFocus placeholder="Rechercher un motif" value={query} onChange={setQuery} />
+                <div className={cl("pills", "motifs")}>
+                    {shownCategories.map(c => (
                         <Pill key={c.id} selected={c.id === categoryId} color={c.color} onClick={() => selectCategory(c)}>
                             {c.emoji} {c.name}
                         </Pill>
                     ))}
+                    {shownCategories.length === 0 && <span className={cl("muted")}>Aucun motif ne correspond.</span>}
                 </div>
 
-                {category && (
+                {category && current && (
                     <>
-                        <div className={cl("label")}>Durée</div>
+                        {category.hint && <div className={cl("notice")}>{category.hint}</div>}
+
+                        <div className={cl("label")}>
+                            Palier
+                            <span className={cl("muted")}>
+                                {priorForMotif === 0 ? "aucune sanction validée pour ce motif" : `${priorForMotif} sanction(s) validée(s) pour ce motif`}
+                            </span>
+                        </div>
                         <div className={cl("pills")}>
-                            {category.durations.map(d => (
-                                <Pill key={d} selected={d === duration} onClick={() => { setDuration(d); setManualCommand(null); }}>{d}</Pill>
-                            ))}
-                            <div className={cl("duration-input")}>
+                            {levels.map(n => {
+                                const l = levelFor(category, n);
+                                const a = actions.find(x => x.id === l.step.action);
+                                return (
+                                    <Pill key={n} selected={n === level} color={n === plannedLevel ? category.color : undefined} onClick={() => selectLevel(n)}>
+                                        {n === plannedLevel && "★ "}{ordinal(n)} · {a ? `${a.emoji} ${a.name}` : "Consigne"}{l.step.duration ? ` ${l.step.duration}` : ""}
+                                    </Pill>
+                                );
+                            })}
+                        </div>
+                        <div className={cl("muted")}>★ palier prévu par le guide. {current.label}{current.step.action && !action ? " · action introuvable, vérifie les réglages" : ""}</div>
+                        {current.step.note && <div className={cl("notice")}>{current.step.note}</div>}
+
+                        <div className={cl("grid-2")}>
+                            <div>
+                                <div className={cl("label")}>Durée</div>
                                 <TextInput
-                                    placeholder="Durée libre"
-                                    value={category.durations.includes(duration) ? "" : duration}
-                                    onChange={v => { setDuration(v); setManualCommand(null); }}
+                                    placeholder="Aucune"
+                                    value={duration}
+                                    onChange={v => { setCustomDuration(v); setManualCommand(null); }}
                                 />
                             </div>
+                            <div>
+                                <div className={cl("label")}>Raison</div>
+                                <TextInput value={reason} onChange={v => { setReason(v); setManualCommand(null); }} />
+                            </div>
                         </div>
-
-                        <div className={cl("label")}>Raison</div>
-                        <TextInput value={reason} onChange={v => { setReason(v); setManualCommand(null); }} />
                     </>
                 )}
 
@@ -252,6 +303,8 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
                         </div>
                     </>
                 )}
+
+                {category && !action && <div className={cl("notice")}>Ce palier n'a pas de commande : suis la consigne, puis « Copier le rapport » pour garder une trace.</div>}
 
                 <div className={cl("label")}>
                     {slash ? "Commande slash" : "Commande"}

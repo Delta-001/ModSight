@@ -58,7 +58,7 @@ Après une mise à jour : `pnpm build` dans Vencord, puis Cmd+R dans Discord, ou
 
 1. **Serveur** : clic droit sur l'icône du serveur → « ModSight : serveur de modération ».
 2. **Salon de sanction** : clic droit sur le salon où tu tapes les commandes du bot → « ModSight : salon de sanction ».
-3. **Commandes** : ouvre le panneau (bouton 👁 dans la barre de message ou `/modsight`), onglet **Réglages**, puis adapte les catégories et les commandes à votre bot.
+3. **Commandes** : ouvre le panneau (bouton 👁 dans la barre de message ou `/modsight`), onglet **Réglages**. Règle la commande de chaque action (Note, Warn, Mute, Forclos, Ban), puis importe ou adapte les motifs.
 
 Tant qu'aucun serveur n'est configuré, le plugin ne fait rien et le panneau explique ces étapes.
 
@@ -75,38 +75,69 @@ Dans la fenêtre de sanction :
 - **Copier la commande** et **Copier le rapport** copient le texte dans le presse-papier.
 - Chaque ouverture de la fenêtre crée une seule entrée « en attente » dans l'historique. Passe-la en « Validée » ou « Refusée » dans l'onglet Sanctions. La récidive ne compte que les sanctions validées.
 
+## Actions et motifs à paliers
+
+- Une **action** est un type de sanction du bot : Note, Warn, Mute, Forclos, Ban. Sa commande (texte ou slash) se règle une seule fois.
+- Un **motif** suit le guide de sanction. Il contient des **paliers** (1re fois, 2e fois…), chacun avec une action, une durée et une consigne facultative. Il peut aussi avoir une règle de **récidive** : une action, et un nombre de jours ajoutés à chaque nouvelle fois.
+- Dans la fenêtre de sanction, ModSight propose le palier ★ d'après le nombre de sanctions **validées** pour ce motif et ce membre. Tu peux choisir un autre palier, ou changer la durée.
+- Un palier « Consigne seule » n'a pas de commande. Il affiche la consigne, et « Copier le rapport » garde une trace.
+
+### Importer des motifs
+
+Un fichier de motifs se charge par panneau → Réglages → Sauvegarde → **Importer un JSON**. S'il ne contient que des motifs, il remplace uniquement les motifs ; les actions, les réglages et les données ne changent pas. Format :
+
+```json
+{
+    "modsight": 1,
+    "config": {
+        "categories": [
+            {
+                "id": "spam", "name": "Spam", "emoji": "🔁", "color": "#f0b232", "reason": "Spam",
+                "hint": "Consigne affichée au modérateur (facultatif)",
+                "steps": [{ "action": "warn" }, { "action": "mute", "duration": "1h" }, { "action": "mute", "duration": "3j" }],
+                "repeat": { "action": "mute", "addDays": 3 }
+            }
+        ]
+    }
+}
+```
+
+`action` reprend l'ID d'une action (`note`, `warn`, `mute`, `forclos`, `ban` par défaut). Une chaîne vide en fait une consigne sans commande, avec un champ `note`. Les durées s'écrivent comme les attend le bot, par exemple `1h` ou `3j` pour DraftBot.
+
 ## Commandes slash (DraftBot…)
 
-Chaque catégorie peut utiliser soit une commande texte (bot à préfixe, comme `+ban`), soit une commande slash.
+Chaque action peut utiliser soit une commande texte (bot à préfixe, comme `+ban`), soit une commande slash.
 
-Réglage, une fois par catégorie :
+Réglage, une fois par action :
 1. Dans un salon du serveur, tape « / » dans la barre de message. Discord charge alors les commandes des bots ; ModSight ne fait aucun appel de son côté.
-2. Panneau → Réglages → ouvre la catégorie → « Commande slash », puis choisis la commande dans la liste (par exemple `/ban`, sous DraftBot).
+2. Panneau → Réglages → Actions du bot → ouvre l'action → « Commande slash », puis cherche la commande (par exemple `ban`) et choisis celle de DraftBot.
 3. Pour chaque option, indique un modèle de valeur (`{id}`, `{raison}`, `{durée}`…) ou choisis une valeur dans la liste. ModSight propose des valeurs d'office pour le membre, la raison et la durée.
 
 Utilisation : dans la fenêtre de sanction, **Insérer dans #salon** ouvre le salon de sanction et colle `/ban` dans la barre de message, avec les champs remplis. Rien n'est envoyé : vérifie, puis appuie sur Entrée.
 
-La barre de message du salon doit être **vide**. Sinon, ModSight ne colle rien et te prévient. La commande est aussi copiée dans le presse-papier : si le collage automatique échoue, vide la barre et fais Cmd+V.
+La barre de message du salon doit être **vide**. Sinon, ModSight ne colle rien et te prévient. La commande est aussi copiée dans le presse-papier : si le collage automatique échoue, vide la barre et colle (Ctrl+V, ou Cmd+V sur Mac).
 
 Si la barre n'est pas vide, ou si Discord n'a pas les commandes en mémoire, le collage donne seulement le texte de la commande.
 
 ## Variables des modèles
 
-Elles sont utilisables dans les commandes des catégories et dans le modèle de rapport.
+Elles sont utilisables dans les commandes des actions et dans le modèle de rapport.
 
 | Variable | Contenu |
 | --- | --- |
 | `{id}` | ID du membre |
 | `{mention}` | Mention du membre (`<@id>`) |
 | `{pseudo}` | Pseudo sur le serveur |
-| `{durée}` | Durée choisie (pastille ou durée libre) |
+| `{durée}` | Durée du palier, ou celle saisie à la main |
 | `{raison}` | Raison |
 | `{preuves}` | Liens du message d'origine et des preuves cochées |
 | `{message}` | Lien du message d'origine |
 | `{salon}` | Salon du message d'origine (`<#id>`) |
-| `{catégorie}` | Nom de la catégorie |
+| `{catégorie}` | Nom du motif |
+| `{action}` | Action du palier (Warn, Mute…) |
+| `{niveau}` | Numéro de l'infraction pour ce motif (1, 2, 3…) |
 | `{commande}` | Commande finale (dans le rapport uniquement) |
-| `{récidive}` | Nombre de sanctions validées avant celle-ci |
+| `{récidive}` | Nombre de sanctions validées avant celle-ci, tous motifs confondus |
 | `{date}` | Date du jour |
 
 Une variable vide est retirée et les espaces en double sont nettoyés. Exemple : `+mute {id} {durée} {raison}` sans durée donne `+mute 123 Spam`.

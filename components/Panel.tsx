@@ -43,7 +43,7 @@ function SetupScreen() {
             <ol>
                 <li>Fais un clic droit sur l'icône du serveur à modérer, puis « ModSight : serveur de modération ».</li>
                 <li>Fais un clic droit sur le salon où tu tapes les commandes de sanction, puis « ModSight : salon de sanction ».</li>
-                <li>Rouvre ce panneau pour adapter les catégories et les commandes à ton bot (onglet Réglages).</li>
+                <li>Rouvre ce panneau : dans l'onglet Réglages, règle la commande de chaque action, puis importe ou adapte les motifs de sanction.</li>
             </ol>
             {currentGuild && (
                 <Button

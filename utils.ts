@@ -27,7 +27,9 @@ export const TEMPLATE_VARIABLES: [string, string][] = [
     ["{preuves}", "Liens des messages cochés comme preuves"],
     ["{message}", "Lien du message d'origine"],
     ["{salon}", "Salon du message d'origine"],
-    ["{catégorie}", "Nom de la catégorie"],
+    ["{catégorie}", "Nom du motif"],
+    ["{action}", "Action du palier (Warn, Mute…)"],
+    ["{niveau}", "Numéro de l'infraction pour ce motif (1, 2, 3…)"],
     ["{commande}", "Commande finale (rapport uniquement)"],
     ["{récidive}", "Nombre de sanctions validées"],
     ["{date}", "Date du jour"]

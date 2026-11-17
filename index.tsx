@@ -22,7 +22,7 @@ import { cacheWatchedMessage, captureEvidence, clearMessageCache, onMessageDelet
 import { openPanel } from "./components/Panel";
 import { openSanctionModal } from "./components/SanctionModal";
 import { openWatchModal } from "./components/WatchReasonModal";
-import { isModGuild, settings } from "./settings";
+import { isModGuild, migrateCategories, settings } from "./settings";
 import { flushData, getData, isLoaded, loadData, MAX_VOICE_HISTORY, patchWatched, unwatch, useData, WatchEntry } from "./store";
 import { avatarUrl, channelName, cl, displayName, goToChannel } from "./utils";
 
@@ -310,6 +310,7 @@ export default definePlugin({
     },
 
     async start() {
+        migrateCategories();
         await loadData();
         // Au lancement de Discord, l'état vocal n'est connu qu'à CONNECTION_OPEN
         if (UserStore.getCurrentUser()) syncVoiceStates();

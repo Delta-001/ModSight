@@ -32,6 +32,8 @@ function SanctionRow({ s }: { s: SanctionRecord; }) {
                     <div className={cl("row-title")}>
                         <span className={cl("dot")} style={{ background: s.color }} />
                         <strong>{s.categoryName}</strong>
+                        {s.actionName && <span>→ {s.actionName}{s.duration ? ` ${s.duration}` : ""}</span>}
+                        {s.level && <span className={cl("muted")}>({s.level === 1 ? "1re" : `${s.level}ᵉ`} fois)</span>}
                         <span>{s.userName}</span>
                         <span className={cl("muted")}>{s.userId}</span>
                     </div>

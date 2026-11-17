@@ -75,6 +75,9 @@ export interface SanctionRecord {
     categoryId: string;
     categoryName: string;
     color: string;
+    /** Action du palier appliqué (Warn, Mute…) et numéro de l'infraction pour ce motif */
+    actionName?: string;
+    level?: number;
     duration: string;
     reason: string;
     command: string;

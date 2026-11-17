@@ -12,10 +12,10 @@ import { chooseFile, saveFile } from "@utils/web";
 import { ChannelStore, GuildStore, SelectedChannelStore, SelectedGuildStore, showToast, TextArea, TextInput, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
-import { exportAll, importAll, parseExport } from "../capture";
+import { describeImport, exportAll, importAll, parseExport } from "../capture";
 import { DEFAULT_REPORT, settings } from "../settings";
 import { channelName, cl } from "../utils";
-import { CategoryEditor, VariablesHelp } from "./CategoryEditor";
+import { ActionsEditor, CategoryEditor, VariablesHelp } from "./CategoryEditor";
 
 function Section({ title, children }: { title: string; children: ReactNode; }) {
     return (
@@ -72,10 +72,9 @@ async function doImport() {
         showToast({ text: e instanceof SyntaxError ? "Fichier JSON illisible." : e.message });
         return;
     }
-    const { data } = parsed;
     confirmAction({
-        title: "Remplacer toutes les données ?",
-        subtitle: `L'import remplace tes données actuelles par : ${Object.keys(data.watched).length} surveillé(s), ${data.evidence.length} preuve(s), ${data.sanctions.length} sanction(s). Cette action est définitive.`,
+        title: "Importer ce fichier ?",
+        subtitle: `L'import remplace, par le contenu du fichier : ${describeImport(parsed)}. Le reste ne change pas. Cette action est définitive.`,
         confirmText: "Tout remplacer",
         cancelText: "Annuler",
         onConfirm: async () => {
@@ -130,7 +129,11 @@ function SettingsTabInner() {
                 </Field>
             </Section>
 
-            <Section title="Catégories de sanction">
+            <Section title="Actions du bot">
+                <ActionsEditor />
+            </Section>
+
+            <Section title="Motifs et paliers">
                 <CategoryEditor />
             </Section>
 
@@ -163,7 +166,7 @@ function SettingsTabInner() {
             </Section>
 
             <Section title="Sauvegarde">
-                <div className={cl("muted")}>L'export contient la liste de surveillance, les preuves (pièces jointes comprises) et l'historique des sanctions. Il reste sur ton ordinateur.</div>
+                <div className={cl("muted")}>L'export contient tous les réglages (actions, motifs, serveur, salon…), la liste de surveillance, les preuves (pièces jointes comprises) et l'historique des sanctions. Il sert aussi à passer d'un ordinateur à l'autre. L'import accepte aussi un fichier de motifs seuls.</div>
                 <div className={cl("toolbar")}>
                     <Button
                         size="small"

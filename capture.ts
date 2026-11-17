@@ -9,7 +9,7 @@ import { PluginNative } from "@utils/types";
 import { Message, MessageAttachment } from "@vencord/discord-types";
 import { MessageStore, showToast } from "@webpack/common";
 
-import { settings } from "./settings";
+import { migrateCategories, settings } from "./settings";
 import { ATTACHMENT_PREFIX, AttachmentRef, CapturedMessage, Evidence, getData, ModSightData, newId, replaceData, updateData } from "./store";
 import { displayName } from "./utils";
 
@@ -179,11 +179,22 @@ export async function deleteEvidence(id: string) {
 
 // Export / import
 
+// Réglages repris par l'export : configuration complète, pour passer d'un ordinateur à l'autre
+const CONFIG_KEYS = [
+    "guildId", "sanctionChannelId", "contextSize", "maxAttachmentMb",
+    "notifyMessages", "notifyVoice", "notifyMembers", "notifyDeleted",
+    "actions", "categories", "reportTemplate"
+] as const;
+
+type Config = Partial<Record<typeof CONFIG_KEYS[number], any>>;
+
+/** Fichier ModSight : réglages, données, ou les deux (un modèle de motifs ne contient que config.categories) */
 interface ExportFile {
     modsight: 1;
-    exportedAt: number;
-    data: ModSightData;
-    attachments: Record<string, { mime: string; base64: string; }>;
+    exportedAt?: number;
+    config?: Config;
+    data?: ModSightData;
+    attachments?: Record<string, { mime: string; base64: string; }>;
 }
 
 function toBase64(bytes: Uint8Array) {
@@ -208,24 +219,50 @@ export async function exportAll(): Promise<string> {
         const s = stored[i];
         if (s) attachments[id] = { mime: s.mime, base64: toBase64(s.bytes) };
     });
-    const file: ExportFile = { modsight: 1, exportedAt: Date.now(), data, attachments };
+    const config: Config = {};
+    for (const key of CONFIG_KEYS) config[key] = settings.store[key];
+    const file: ExportFile = { modsight: 1, exportedAt: Date.now(), config: JSON.parse(JSON.stringify(config)), data, attachments };
     return JSON.stringify(file);
 }
 
-/** Lit un export ; lève une erreur si le fichier n'est pas un export ModSight */
+const isData = (d: any): d is ModSightData =>
+    !!d && Array.isArray(d.evidence) && Array.isArray(d.sanctions) && typeof d.watched === "object";
+
+/** Lit un fichier ModSight ; lève une erreur s'il n'en est pas un */
 export function parseExport(text: string): ExportFile {
     const file = JSON.parse(text) as ExportFile;
-    if (file?.modsight !== 1 || !file.data || !Array.isArray(file.data.evidence) || !Array.isArray(file.data.sanctions) || typeof file.data.watched !== "object")
-        throw new Error("Ce fichier n'est pas un export ModSight.");
+    const hasConfig = !!file?.config && typeof file.config === "object";
+    if (file?.modsight !== 1 || (!hasConfig && !isData(file.data)) || (file.data && !isData(file.data)))
+        throw new Error("Ce fichier n'est pas un fichier ModSight.");
+    if (file.config?.categories && !(Array.isArray(file.config.categories) && file.config.categories.every((c: any) => Array.isArray(c?.steps))))
+        throw new Error("Les motifs de ce fichier sont mal formés.");
     return file;
 }
 
-/** Remplace toutes les données locales par celles de l'export */
+/** Ce que l'import va remplacer, pour la fenêtre de confirmation */
+export function describeImport(file: ExportFile) {
+    const parts: string[] = [];
+    const { config, data } = file;
+    if (config?.categories) parts.push(`${config.categories.length} motif(s)`);
+    if (config?.actions) parts.push(`${config.actions.length} action(s)`);
+    if (config && CONFIG_KEYS.some(k => k !== "categories" && k !== "actions" && k in config)) parts.push("les réglages (serveur, salon, notifications…)");
+    if (data) parts.push(`${Object.keys(data.watched).length} surveillé(s), ${data.evidence.length} preuve(s), ${data.sanctions.length} sanction(s)`);
+    return parts.join(", ");
+}
+
+/** Remplace, partie par partie, ce que contient le fichier : réglages présents, puis données */
 export async function importAll(file: ExportFile) {
-    const oldKeys = (await DataStore.keys()).filter(k => typeof k === "string" && k.startsWith(ATTACHMENT_PREFIX));
-    await DataStore.delMany(oldKeys);
-    await DataStore.setMany(Object.entries(file.attachments ?? {}).map(([id, a]) => [attachmentKey(id), { mime: a.mime, bytes: fromBase64(a.base64) }]));
-    revokeAttachmentUrls();
-    clearMessageCache();
-    await replaceData(file.data);
+    if (file.config) {
+        const store = settings.store as Record<string, unknown>;
+        for (const key of CONFIG_KEYS) if (key in file.config) store[key] = file.config[key];
+        migrateCategories();
+    }
+    if (file.data) {
+        const oldKeys = (await DataStore.keys()).filter(k => typeof k === "string" && k.startsWith(ATTACHMENT_PREFIX));
+        await DataStore.delMany(oldKeys);
+        await DataStore.setMany(Object.entries(file.attachments ?? {}).map(([id, a]) => [attachmentKey(id), { mime: a.mime, bytes: fromBase64(a.base64) }]));
+        revokeAttachmentUrls();
+        clearMessageCache();
+        await replaceData(file.data);
+    }
 }

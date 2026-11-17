@@ -635,3 +635,37 @@ textarea.vc-ms-code {
 .vc-ms-command-result:hover {
     background: var(--background-modifier-hover);
 }
+
+.vc-ms-motifs {
+    max-height: 168px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+
+.vc-ms-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-ms-steps .vc-ms-label {
+    margin: 4px 0 0;
+}
+
+.vc-ms-step {
+    display: grid;
+    grid-template-columns: 72px 150px 120px 1fr auto;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-ms-step-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-ms-step .vc-ms-select {
+    height: 40px;
+    min-width: 0;
+}
