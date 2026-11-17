@@ -16,6 +16,7 @@ import { describeImport, exportAll, importAll, parseExport } from "../capture";
 import { DEFAULT_REPORT, settings } from "../settings";
 import { channelName, cl } from "../utils";
 import { ActionsEditor, CategoryEditor, VariablesHelp } from "./CategoryEditor";
+import { UpdateSection } from "./UpdateSection";
 
 function Section({ title, children }: { title: string; children: ReactNode; }) {
     return (
@@ -180,6 +181,10 @@ function SettingsTabInner() {
                     </Button>
                     <Button size="small" variant="dangerSecondary" onClick={doImport}>Importer un JSON</Button>
                 </div>
+            </Section>
+
+            <Section title="Mise à jour">
+                <UpdateSection />
             </Section>
         </div>
     );

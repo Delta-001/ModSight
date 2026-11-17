@@ -24,7 +24,7 @@ ModSight est un *userplugin* : il faut Vencord compilé depuis ses sources (dép
 4. Quitte complètement Discord (clic droit sur l'icône près de l'horloge → Quitter), puis rouvre-le.
 5. Active **ModSight** dans Réglages Discord → Vencord → Plugins.
 
-Mise à jour :
+Mise à jour : voir [Mise à jour](#mise-à-jour), ou à la main :
 ```powershell
 git -C src\userplugins\modSight pull
 pnpm build
@@ -53,6 +53,12 @@ Le compilateur suit alors le lien jusqu'au vrai dossier et n'y trouve plus les r
 Ces deux éléments ne sont pas dans le dépôt : ils casseraient le build quand ModSight est cloné directement dans Vencord.
 
 Après une mise à jour : `pnpm build` dans Vencord, puis Cmd+R dans Discord, ou Cmd+Q et réouverture si `native.ts` a changé.
+
+## Mise à jour
+
+Panneau → Réglages → **Vérifier les mises à jour** (le même bouton est dans Réglages Discord → Vencord → Plugins → ModSight). ModSight affiche les nouveautés publiées sur GitHub. **Mettre à jour** fait alors un `git pull` dans le dossier du plugin, puis recompile Vencord. Ensuite, un bouton recharge Discord, ou le redémarre si la partie native du plugin a changé.
+
+GitHub n'est contacté que quand tu cliques. Il faut `git` et Node.js accessibles par Discord, et un plugin installé avec `git clone`. Si tu as modifié des fichiers suivis par git dans le dossier du plugin, le `git pull` peut échouer : l'erreur s'affiche alors sous le bouton.
 
 ## Configuration en 3 étapes
 

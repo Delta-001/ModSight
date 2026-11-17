@@ -13,7 +13,7 @@ import { migrateCategories, settings } from "./settings";
 import { ATTACHMENT_PREFIX, AttachmentRef, CapturedMessage, Evidence, getData, ModSightData, newId, replaceData, updateData } from "./store";
 import { displayName } from "./utils";
 
-const Native = VencordNative.pluginHelpers.ModSight as PluginNative<typeof import("./native")> | undefined;
+export const Native = VencordNative.pluginHelpers.ModSight as PluginNative<typeof import("./native")> | undefined;
 
 interface StoredAttachment {
     mime: string;

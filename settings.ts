@@ -6,6 +6,9 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
+import { React } from "@webpack/common";
+
+import { UpdateSection } from "./components/UpdateSection";
 
 /** Commande slash d'un bot (DraftBot…), pré-remplie puis collée par l'utilisateur */
 export interface SlashConfig {
@@ -133,6 +136,11 @@ export const settings = definePluginSettings({
     reportTemplate: {
         type: OptionType.CUSTOM,
         default: DEFAULT_REPORT
+    },
+    update: {
+        type: OptionType.COMPONENT,
+        // Résolu au rendu : UpdateSection importe ce fichier
+        component: () => React.createElement(UpdateSection)
     }
 });
 
