@@ -50,6 +50,8 @@ export interface Category {
     steps: Step[];
     /** Au-delà des paliers : action à appliquer, et jours ajoutés à chaque récidive */
     repeat?: { action: string; addDays?: number; };
+    /** Coche d'office la capture automatique des preuves dans la fenêtre de sanction */
+    autoCapture?: boolean;
 }
 
 export const DEFAULT_ACTIONS: SanctionAction[] = [
@@ -143,7 +145,17 @@ export const settings = definePluginSettings({
     },
     relayEvents: {
         type: OptionType.CUSTOM,
-        default: { messages: true, deleted: true, voice: true, members: true, watchlist: true, sanctions: true } as Record<string, boolean>
+        default: { messages: true, deleted: true, voice: true, members: true, watchlist: true, sanctions: true, evidence: true } as Record<string, boolean>
+    },
+    /** Salon dédié (webhook) par type d'évènement ; vide = salon par défaut */
+    relayWebhooks: {
+        type: OptionType.CUSTOM,
+        default: {} as Record<string, string>
+    },
+    /** « Un fil par membre » par salon : "default" pour le salon par défaut, sinon le type d'évènement */
+    relayThreads: {
+        type: OptionType.CUSTOM,
+        default: {} as Record<string, boolean>
     },
     update: {
         type: OptionType.COMPONENT,

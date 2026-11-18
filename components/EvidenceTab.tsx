@@ -7,9 +7,10 @@
 import { Button } from "@components/Button";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { confirmAction, copyWithToast } from "@utils/discord";
-import { TextInput, useEffect, useState } from "@webpack/common";
+import { showToast, TextInput, useEffect, useState } from "@webpack/common";
 
 import { deleteEvidence, getAttachmentUrl } from "../capture";
+import { relayEvidence } from "../relay";
 import { AttachmentRef, Evidence, useData } from "../store";
 import { channelName, cl, formatDate, goToChannel, messageLink } from "../utils";
 import { closePanel } from "./Panel";
@@ -64,6 +65,15 @@ function EvidenceCard({ e }: { e: Evidence; }) {
                 <div className={cl("actions")}>
                     <Button size="small" variant="secondary" onClick={() => copyWithToast(summary(e), "Résumé copié")}>Copier le résumé</Button>
                     <Button size="small" variant="secondary" onClick={() => { closePanel(); goToChannel(e.channelId, e.messageId); }}>Aller au message</Button>
+                    <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => relayEvidence(e, { force: true }).then(sent => showToast({
+                            text: sent ? "Preuve envoyée dans le salon des preuves." : "Aucun salon de preuves : configure un webhook dans les réglages."
+                        }))}
+                    >
+                        Envoyer au salon
+                    </Button>
                     <Button
                         size="small"
                         variant="dangerSecondary"

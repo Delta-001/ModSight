@@ -6,14 +6,16 @@
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
-import { RenderModalProps } from "@vencord/discord-types";
-import { ChannelStore, GuildMemberStore, Modal, openModal, showToast, SnowflakeUtils, TextArea, TextInput, useMemo, useRef, useState } from "@webpack/common";
+import { Message, RenderModalProps } from "@vencord/discord-types";
+import { ChannelStore, GuildMemberStore, MessageStore, Modal, openModal, SelectedChannelStore, showToast, SnowflakeUtils, TextArea, TextInput, useMemo, useRef, useState } from "@webpack/common";
 import type { CSSProperties, ReactNode } from "react";
 
+import { captureEvidence } from "../capture";
 import { levelFor, ordinal } from "../ladder";
-import { Category, settings } from "../settings";
+import { relayEvidence } from "../relay";
+import { Category, isModGuild, settings } from "../settings";
 import { buildSlash, copySlash, pasteSlash } from "../slash";
-import { countApproved, newId, SanctionRecord, upsertSanction, useData } from "../store";
+import { addSanctionEvidence, countApproved, newId, SanctionRecord, upsertSanction, useData } from "../store";
 import { avatarUrl, channelName, cl, daysSince, displayName, fillTemplate, formatDay, insertInSanctionChannel, messageLink, openSanctionChannel, PASTE_KEY } from "../utils";
 import { closePanel } from "./Panel";
 
@@ -23,6 +25,15 @@ export interface SanctionOptions {
     message?: { id: string; channelId: string; };
     /** Preuve cochée d'office */
     evidenceId?: string;
+}
+
+/** Message à capturer : celui d'origine, sinon le dernier du membre dans le salon ouvert */
+function findCaptureSource(userId: string, origin?: { id: string; channelId: string; }): Message | undefined {
+    if (origin) return MessageStore.getMessage(origin.channelId, origin.id);
+    const channelId = SelectedChannelStore.getChannelId();
+    if (!channelId || !isModGuild(ChannelStore.getChannel(channelId)?.guild_id)) return;
+    const messages: Message[] = MessageStore.getMessages(channelId)?._array ?? [];
+    return messages.findLast(m => m.author.id === userId);
 }
 
 export function openSanctionModal(opts: SanctionOptions) {
@@ -83,6 +94,9 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
     const [reason, setReason] = useState("");
     const [checked, setChecked] = useState<string[]>(evidenceId ? [evidenceId] : []);
     const [manualCommand, setManualCommand] = useState<string | null>(null);
+    // null : suit le réglage du motif
+    const [autoCapture, setAutoCapture] = useState<boolean | null>(null);
+    const captured = useRef(false);
 
     // Infractions déjà validées pour ce motif : elles déterminent le palier prévu
     const priorForMotif = useData(d => d.sanctions.filter(s => s.userId === userId && s.categoryId === categoryId && s.status === "approved" && s.id !== recordId.current).length);
@@ -147,9 +161,25 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
     const command = slash ? (slash.ok ? slash.text : "") : manualCommand ?? generated;
     const report = fillTemplate(reportTemplate, { ...vars, commande: command });
 
+    const capture = autoCapture ?? !!category?.autoCapture;
+    const captureSource = findCaptureSource(userId, origin);
+
+    /** Capture la preuve une seule fois par fenêtre, la rattache à la sanction et l'envoie au salon des preuves */
+    async function captureForSanction() {
+        if (!captureSource || !category) return;
+        captured.current = true;
+        const evidence = await captureEvidence(captureSource, guildId, { reuse: true });
+        if (!evidence) return;
+        setChecked(c => c.includes(evidence.id) ? c : [...c, evidence.id]);
+        addSanctionEvidence(recordId.current, evidence.id);
+        const summary = [category.name, ordinal(level), action && `${action.name}${duration ? " " + duration : ""}`, reason.trim()].filter(Boolean).join(" · ");
+        relayEvidence(evidence, { sanction: summary });
+    }
+
     function record() {
         if (!category) return;
         createdAt.current ||= Date.now();
+        if (capture && !captured.current) void captureForSanction();
         const entry: SanctionRecord = {
             id: recordId.current,
             createdAt: createdAt.current,
@@ -300,6 +330,25 @@ function SanctionModal({ modalProps, userId, message, evidenceId }: SanctionOpti
                                     </label>
                                 );
                             })}
+                        </div>
+                    </>
+                )}
+
+                {category && (
+                    <>
+                        <label className={cl("check")}>
+                            <input
+                                type="checkbox"
+                                checked={capture}
+                                disabled={!captureSource || captured.current}
+                                onChange={ev => setAutoCapture(ev.currentTarget.checked)}
+                            />
+                            <span>📸 Capturer automatiquement les preuves</span>
+                        </label>
+                        <div className={cl("muted")}>
+                            {captured.current ? "Preuve capturée pour cette sanction."
+                                : !captureSource ? "Aucun message de ce membre à capturer : ouvre la sanction par un clic droit sur son message, ou depuis le salon où il a écrit."
+                                    : `Au premier « Insérer » ou « Copier », capture ${origin ? "le message d'origine" : `son dernier message dans ${channelName(captureSource.channel_id)}`} et ${settings.store.contextSize} message(s) de contexte, puis l'envoie au salon des preuves s'il est configuré.`}
                         </div>
                     </>
                 )}

@@ -49,28 +49,65 @@ export async function downloadAttachment(_: IpcMainInvokeEvent, url: string, max
 }
 
 export type WebhookResult =
-    | { ok: true; }
-    | { ok: false; error: string; retryAfter?: number; };
+    | { ok: true; /** Salon (ou fil) où le message a été posté, avec wait */ channelId?: string; }
+    | { ok: false; error: string; /** Code d'erreur JSON de Discord */ code?: number; retryAfter?: number; };
+
+export interface WebhookFile {
+    name: string;
+    mime: string;
+    bytes: Uint8Array;
+}
+
+export interface WebhookOptions {
+    /** Attend la réponse de Discord pour connaître le fil créé */
+    wait?: boolean;
+    /** Fil existant où poster */
+    threadId?: string;
+}
 
 /** Poste sur un webhook Discord : c'est le webhook qui écrit, pas le compte de l'utilisateur (ni cookie ni jeton) */
-export async function postWebhook(_: IpcMainInvokeEvent, url: string, body: unknown): Promise<WebhookResult> {
+export async function postWebhook(_: IpcMainInvokeEvent, url: string, body: unknown, files: WebhookFile[] = [], { wait, threadId }: WebhookOptions = {}): Promise<WebhookResult> {
     if (!WEBHOOK_PATTERN.test(url)) return { ok: false, error: "URL de webhook invalide" };
+    const target = new URL(url);
+    if (wait) target.searchParams.set("wait", "true");
+    if (threadId && /^\d+$/.test(threadId)) target.searchParams.set("thread_id", threadId);
+
+    let payload: string | FormData = JSON.stringify(body);
+    if (files.length) {
+        const form = new FormData();
+        form.append("payload_json", payload);
+        files.forEach((f, i) => form.append(`files[${i}]`, new Blob([f.bytes as BlobPart], { type: f.mime }), f.name));
+        payload = form;
+    }
+
     try {
-        const res = await fetch(url, {
+        const res = await fetch(target, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            headers: files.length ? undefined : { "Content-Type": "application/json" },
+            body: payload,
             credentials: "omit",
             redirect: "error"
         });
-        if (res.status === 429) {
-            const { retry_after } = await res.json().catch(() => ({}));
-            return { ok: false, error: "Trop de messages", retryAfter: Number(retry_after) || 2 };
-        }
-        if (!res.ok) return { ok: false, error: `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`.trim() };
-        return { ok: true };
+        const json = await res.json().catch(() => null);
+        if (res.status === 429) return { ok: false, error: "Trop de messages", retryAfter: Number(json?.retry_after) || 2 };
+        if (res.status === 413) return { ok: false, error: "Fichiers trop volumineux pour ce salon" };
+        if (!res.ok) return { ok: false, error: `HTTP ${res.status}${json?.message ? " " + json.message : ""}`, code: json?.code };
+        return { ok: true, channelId: json?.channel_id };
     } catch (e: any) {
         return { ok: false, error: String(e?.message ?? e) };
+    }
+}
+
+/** Salon d'un webhook : lecture publique de Discord avec le jeton du webhook, sans compte */
+export async function getWebhookInfo(_: IpcMainInvokeEvent, url: string): Promise<{ channelId: string; name: string; } | null> {
+    if (!WEBHOOK_PATTERN.test(url)) return null;
+    try {
+        const res = await fetch(url, { credentials: "omit", redirect: "error" });
+        if (!res.ok) return null;
+        const json = await res.json();
+        return { channelId: String(json.channel_id), name: String(json.name ?? "") };
+    } catch {
+        return null;
     }
 }
 

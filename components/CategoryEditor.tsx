@@ -339,6 +339,10 @@ function MotifRow({ category, index, all, actions }: { category: Category; index
                     </label>
                     <label className={cl("span-3")}>Raison par défaut<TextInput value={category.reason} onChange={reason => update({ reason })} /></label>
                     <label className={cl("span-3")}>Consigne générale (facultatif)<TextInput value={category.hint ?? ""} onChange={hint => update({ hint: hint || undefined })} /></label>
+                    <label className={cl("check", "span-3")}>
+                        <input type="checkbox" checked={!!category.autoCapture} onChange={e => update({ autoCapture: e.currentTarget.checked || undefined })} />
+                        <span>📸 Capture automatique des preuves, cochée d'office dans la fenêtre de sanction</span>
+                    </label>
 
                     <div className={cl("span-3", "steps")}>
                         <div className={cl("label")}>Paliers</div>

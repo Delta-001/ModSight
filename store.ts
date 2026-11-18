@@ -192,6 +192,13 @@ export function upsertSanction(record: SanctionRecord) {
     });
 }
 
+/** Rattache une preuve capturée après coup à une sanction */
+export function addSanctionEvidence(id: string, evidenceId: string) {
+    updateData(d => ({
+        sanctions: d.sanctions.map(s => s.id === id && !s.evidenceIds.includes(evidenceId) ? { ...s, evidenceIds: [...s.evidenceIds, evidenceId] } : s)
+    }));
+}
+
 export function setSanctionStatus(id: string, status: SanctionStatus) {
     updateData(d => ({ sanctions: d.sanctions.map(s => s.id === id ? { ...s, status } : s) }));
 }

@@ -22,7 +22,7 @@ import { cacheWatchedMessage, captureEvidence, clearMessageCache, onMessageDelet
 import { openPanel } from "./components/Panel";
 import { openSanctionModal } from "./components/SanctionModal";
 import { openWatchModal } from "./components/WatchReasonModal";
-import { clearRelay, relayDeleted, relayMember, relayMessage, relayVoice, relayWatch } from "./relay";
+import { clearRelay, relayDeleted, relayEvidence, relayMember, relayMessage, relayVoice, relayWatch } from "./relay";
 import { isModGuild, migrateCategories, settings } from "./settings";
 import { flushData, getData, isLoaded, loadData, MAX_VOICE_HISTORY, patchWatched, unwatch, useData, WatchEntry } from "./store";
 import { avatarUrl, channelName, cl, displayName, goToChannel } from "./utils";
@@ -61,7 +61,7 @@ const messageMenu: NavContextMenuPatchCallback = (children, { message, channel }
                 label="Préparer une sanction"
                 action={() => openSanctionModal({ userId: message.author.id, message: { id: message.id, channelId: message.channel_id } })}
             />
-            <Menu.MenuItem id="vc-ms-capture" label="Capturer comme preuve" action={() => captureEvidence(message, guildId)} />
+            <Menu.MenuItem id="vc-ms-capture" label="Capturer comme preuve" action={() => captureEvidence(message, guildId).then(e => e && relayEvidence(e))} />
         </Menu.MenuGroup>
     );
 };
@@ -274,6 +274,7 @@ export default definePlugin({
             const evidence = await onMessageDeleted(id, channelId, guildId!);
             if (!evidence) return;
             relayDeleted(evidence.userId, channelId, evidence.messages[0]?.content ?? "");
+            relayEvidence(evidence);
             if (!settings.store.notifyDeleted) return;
             notify(
                 evidence.userId,

@@ -8,6 +8,7 @@ import { Button } from "@components/Button";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
 import { confirmAction } from "@utils/discord";
+import { Logger } from "@utils/Logger";
 import { chooseFile, saveFile } from "@utils/web";
 import { ChannelStore, GuildStore, SelectedChannelStore, SelectedGuildStore, showToast, TextArea, TextInput, useState } from "@webpack/common";
 import type { ReactNode } from "react";
@@ -59,29 +60,38 @@ function NumberInput({ value, min, onChange }: { value: number; min: number; onC
     );
 }
 
+const logger = new Logger("ModSight");
+
 async function doExport() {
     const json = await exportAll();
     saveFile(new File([json], `modsight-${new Date().toISOString().slice(0, 10)}.json`, { type: "application/json" }));
 }
 
 async function doImport() {
-    const file = await chooseFile("application/json");
+    // L'extension en plus du type MIME : sur Mac, le sélecteur peut griser un .json sinon
+    const file = await chooseFile(".json,application/json");
     if (!file) return;
     let parsed: ReturnType<typeof parseExport>;
     try {
         parsed = parseExport(await file.text());
     } catch (e: any) {
-        showToast({ text: e instanceof SyntaxError ? "Fichier JSON illisible." : e.message });
+        showToast({ text: e instanceof SyntaxError ? "Fichier JSON illisible." : e.message, variant: "critical" });
         return;
     }
+    const summary = describeImport(parsed);
     confirmAction({
         title: "Importer ce fichier ?",
-        subtitle: `L'import remplace, par le contenu du fichier : ${describeImport(parsed)}. Le reste ne change pas. Cette action est définitive.`,
+        subtitle: `L'import remplace, par le contenu du fichier : ${summary}. Le reste ne change pas. Cette action est définitive.`,
         confirmText: "Tout remplacer",
         cancelText: "Annuler",
         onConfirm: async () => {
-            await importAll(parsed);
-            showToast({ text: "Import terminé" });
+            try {
+                await importAll(parsed);
+                showToast({ text: `Import terminé : ${summary}`, variant: "success" });
+            } catch (e: any) {
+                logger.error("Import impossible", e);
+                showToast({ text: `L'import a échoué : ${e?.message ?? e}`, variant: "critical" });
+            }
         }
     });
 }
@@ -184,7 +194,7 @@ function SettingsTabInner() {
                     >
                         Exporter en JSON
                     </Button>
-                    <Button size="small" variant="dangerSecondary" onClick={doImport}>Importer un JSON</Button>
+                    <Button size="small" variant="dangerSecondary" onClick={() => doImport().catch(e => showToast({ text: `L'import a échoué : ${e?.message ?? e}`, variant: "critical" }))}>Importer un JSON</Button>
                 </div>
             </Section>
 

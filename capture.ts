@@ -22,6 +22,9 @@ interface StoredAttachment {
 
 const attachmentKey = (id: string) => ATTACHMENT_PREFIX + id;
 
+/** Octets d'une pièce jointe stockée, s'il y en a */
+export const getStoredAttachment = (id: string) => DataStore.get<StoredAttachment>(attachmentKey(id));
+
 // Pièces jointes
 
 async function storeAttachment(att: MessageAttachment): Promise<AttachmentRef> {
@@ -87,11 +90,16 @@ async function captureMessages(messages: Message[], guildId: string, targetId: s
 
 const inProgress = new Set<string>();
 
-/** Capture le message et son contexte depuis MessageStore, pièces jointes comprises */
-export async function captureEvidence(message: Message, guildId: string) {
-    if (inProgress.has(message.id) || getData().evidence.some(e => e.messageId === message.id && !e.deleted)) {
+/**
+ * Capture le message et son contexte depuis MessageStore, pièces jointes comprises.
+ * Si le message est déjà capturé : renvoie la preuve existante avec reuse, sinon null et un avertissement
+ */
+export async function captureEvidence(message: Message, guildId: string, { reuse = false } = {}): Promise<Evidence | null> {
+    const existing = getData().evidence.find(e => e.messageId === message.id && !e.deleted);
+    if (existing && reuse) return existing;
+    if (inProgress.has(message.id) || existing) {
         showToast({ text: "Ce message est déjà enregistré comme preuve." });
-        return;
+        return null;
     }
     inProgress.add(message.id);
     try {
@@ -115,6 +123,7 @@ export async function captureEvidence(message: Message, guildId: string) {
 
         const failed = evidence.messages.flatMap(m => m.attachments).filter(a => !a.stored).length;
         showToast({ text: failed ? `Preuve enregistrée (${failed} pièce(s) jointe(s) non stockée(s))` : "Preuve enregistrée" });
+        return evidence;
     } finally {
         inProgress.delete(message.id);
     }

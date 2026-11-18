@@ -79,6 +79,7 @@ Tant qu'aucun serveur n'est configuré, le plugin ne fait rien et le panneau exp
 Dans la fenêtre de sanction :
 - **Insérer dans #salon** ouvre le salon de sanction et y écrit la commande, sans l'envoyer.
 - **Copier la commande** et **Copier le rapport** copient le texte dans le presse-papier.
+- **📸 Capturer automatiquement les preuves** : au premier « Insérer » ou « Copier », ModSight capture le message d'origine avec son contexte (ou, sans message d'origine, le dernier message du membre dans le salon ouvert). La preuve est cochée, rattachée à la sanction et envoyée au salon des preuves s'il est configuré. La case est cochée d'office pour les motifs réglés ainsi.
 - Chaque ouverture de la fenêtre crée une seule entrée « en attente » dans l'historique. Passe-la en « Validée » ou « Refusée » dans l'onglet Sanctions. La récidive ne compte que les sanctions validées.
 
 ## Actions et motifs à paliers
@@ -101,14 +102,15 @@ Un fichier de motifs se charge par panneau → Réglages → Sauvegarde → **Im
                 "id": "spam", "name": "Spam", "emoji": "🔁", "color": "#f0b232", "reason": "Spam",
                 "hint": "Consigne affichée au modérateur (facultatif)",
                 "steps": [{ "action": "warn" }, { "action": "mute", "duration": "1h" }, { "action": "mute", "duration": "3j" }],
-                "repeat": { "action": "mute", "addDays": 3 }
+                "repeat": { "action": "mute", "addDays": 3 },
+                "autoCapture": true
             }
         ]
     }
 }
 ```
 
-`action` reprend l'ID d'une action (`note`, `warn`, `mute`, `forclos`, `ban` par défaut). Une chaîne vide en fait une consigne sans commande, avec un champ `note`. Les durées s'écrivent comme les attend le bot, par exemple `1h` ou `3j` pour DraftBot.
+`autoCapture` (facultatif) coche d'office la capture automatique des preuves. `action` reprend l'ID d'une action (`note`, `warn`, `mute`, `forclos`, `ban` par défaut). Une chaîne vide en fait une consigne sans commande, avec un champ `note`. Les durées s'écrivent comme les attend le bot, par exemple `1h` ou `3j` pour DraftBot.
 
 ## Commandes slash (DraftBot…)
 
@@ -127,22 +129,46 @@ Si la barre n'est pas vide, ou si Discord n'a pas les commandes en mémoire, le 
 
 ## Journal vers un salon (webhook)
 
-ModSight peut recopier les évènements des membres surveillés dans un salon de ton choix, sur n'importe quel serveur, comme un journal de sécurité :
+ModSight peut recopier les évènements des membres surveillés dans des salons de ton choix, sur n'importe quel serveur, comme un journal de sécurité :
 - les messages des surveillés, avec le lien du message et les pièces jointes ;
 - leurs messages supprimés ;
 - le vocal : arrivée, changement de salon, départ ;
 - les changements de pseudo, arrivées et départs du serveur ;
 - les ajouts et retraits de la liste de surveillance ;
-- les sanctions validées ou refusées, avec le modérateur.
+- les sanctions validées ou refusées, avec le modérateur ;
+- les preuves capturées, pour les sauvegarder.
+
+Chaque type d'évènement peut aller dans son propre salon (par exemple un salon pour le vocal, un pour les messages, un pour les preuves). Sinon, il va dans le salon par défaut.
 
 Réglage :
-1. Dans le salon voulu : Modifier le salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL du webhook.
-2. Panneau → Réglages → Journal vers un salon : colle l'URL, puis « Envoyer un test ».
-3. Choisis les types d'évènements à envoyer.
+1. Dans chaque salon voulu : Modifier le salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL du webhook.
+2. Panneau → Réglages → Journal vers un salon : colle l'URL du salon par défaut, et celle d'un salon dédié pour les types que tu veux séparer (« changer de salon »). « Tester » envoie un message d'essai.
+3. Active ou coupe chaque type d'évènement.
 
-C'est le webhook qui écrit dans le salon, pas ton compte : ce n'est pas un selfbot. Les mentions contenues dans les messages recopiés ne notifient personne. Les envois sont regroupés (jusqu'à 10 évènements par message) et espacés pour respecter les limites de Discord. Si Discord est fermé ou rechargé, les évènements pas encore envoyés sont perdus.
+### Un fil par membre
 
-Garde l'URL du webhook secrète : toute personne qui l'a peut écrire dans le salon. Elle n'est pas incluse dans l'export JSON.
+Coche « 🧵 Un fil par membre surveillé » sous l'URL d'un salon pour que chaque surveillé ait son propre fil dans ce salon : messages, vocal, preuves, sanctions… tout son historique au même endroit. Le salon doit être un **salon forum** : Discord ne laisse un webhook créer des fils que dans un forum.
+
+- Le fil s'appelle « Pseudo · ID » et se crée au premier évènement du membre. ModSight retient en local quel fil correspond à quel membre.
+- Si le fil est supprimé, archivé ou verrouillé, un nouveau fil est créé au prochain évènement.
+- Un changement de pseudo ne renomme pas le fil (un webhook n'en a pas le droit) : l'ID du titre reste fiable.
+- Changer l'URL du webhook fait repartir de nouveaux fils.
+
+### Salon des preuves
+
+Chaque preuve envoyée contient :
+- l'**ID du membre** en texte : chercher l'ID dans le salon retrouve toutes ses preuves ;
+- le message visé, le salon et le lien ;
+- la transcription complète avec le contexte, dans un fichier `.txt` ;
+- les pièces jointes stockées, dans la limite de 10 Mo par envoi (les autres restent sous forme de lien).
+
+Une preuve part au moment de sa capture (clic droit → « Capturer comme preuve »), quand un surveillé supprime un message, lors d'une capture automatique de sanction, ou avec « Envoyer au salon » dans l'onglet Preuves (même si l'envoi automatique des preuves est coupé).
+
+### Sécurité
+
+C'est le webhook qui écrit dans le salon, pas ton compte : ce n'est pas un selfbot. Les mentions contenues dans les messages recopiés ne notifient personne. Les envois sont regroupés et espacés pour respecter les limites de Discord, salon par salon. Si Discord est fermé ou rechargé, les évènements pas encore envoyés sont perdus.
+
+Garde les URL des webhooks secrètes : toute personne qui en a une peut écrire dans le salon. Elles ne sont pas incluses dans l'export JSON.
 
 ## Variables des modèles
 
